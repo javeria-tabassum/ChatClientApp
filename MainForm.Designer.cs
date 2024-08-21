@@ -89,7 +89,7 @@
             // 
             this.onlineUsersLabel.Appearance.Font = new System.Drawing.Font("Tahoma", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.onlineUsersLabel.Appearance.Options.UseFont = true;
-            this.onlineUsersLabel.Location = new System.Drawing.Point(517, 32);
+            this.onlineUsersLabel.Location = new System.Drawing.Point(521, 32);
             this.onlineUsersLabel.Name = "onlineUsersLabel";
             this.onlineUsersLabel.Size = new System.Drawing.Size(67, 14);
             this.onlineUsersLabel.TabIndex = 5;
@@ -109,7 +109,7 @@
             // 
             this.label2.Appearance.Font = new System.Drawing.Font("Tahoma", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.label2.Appearance.Options.UseFont = true;
-            this.label2.Location = new System.Drawing.Point(12, 66);
+            this.label2.Location = new System.Drawing.Point(13, 66);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(51, 14);
             this.label2.TabIndex = 7;
