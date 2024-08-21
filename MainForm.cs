@@ -91,7 +91,7 @@ namespace ChatClientApp
 
         private void sendButton_Click(object sender, EventArgs e)
         {
-            string recipient = recipientTextBox.Text;
+            string recipient = recipientComboBox.Text;
             string message = messageTextBox.Text;
 
             if (string.IsNullOrWhiteSpace(recipient) || string.IsNullOrWhiteSpace(message))
@@ -162,9 +162,30 @@ namespace ChatClientApp
             }
 
             onlineUsersListBox.Items.Clear();
+            recipientComboBox.Properties.Items.Clear();
+
             foreach (var user in onlineUsers.Keys)
             {
                 onlineUsersListBox.Items.Add(user);
+                recipientComboBox.Properties.Items.Add(user);
+            }
+        }
+
+        private void messageTextBox_Enter(object sender, EventArgs e)
+        {
+            if (messageTextBox.Text == "Type your message here...")
+            {
+                messageTextBox.Text = "";
+                messageTextBox.Properties.Appearance.ForeColor = Color.Black;
+            }
+        }
+
+        private void messageTextBox_Leave(object sender, EventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(messageTextBox.Text))
+            {
+                messageTextBox.Text = "Type your message here...";
+                messageTextBox.Properties.Appearance.ForeColor = Color.Gray;
             }
         }
     } }
