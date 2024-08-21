@@ -1,7 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
+using System.IO;
+using System.Linq;
 using System.Windows.Forms;
 using DevExpress.XtraEditors;
+using DevExpress.XtraEditors.Controls;
 using NetMQ;
 using NetMQ.Sockets;
 
@@ -12,11 +16,45 @@ namespace ChatClientApp
         private DealerSocket clientSocket;
         private string username;
         private string serverAddress = "tcp://localhost:5555";
-        private Dictionary<string, string> onlineUsers = new Dictionary<string, string>();
+        private Dictionary<string, bool> onlineUsers = new Dictionary<string, bool>();
+
+        private ImageList statusImageList;
 
         public MainForm()
         {
             InitializeComponent();
+            InitializeStatusImageList();
+        }
+
+        private void InitializeStatusImageList()
+        {
+            statusImageList = new ImageList();
+            string basePath = AppDomain.CurrentDomain.BaseDirectory;
+            string onlineImagePath = Path.Combine(basePath, "images/green_dot.png");
+            string offlineImagePath = Path.Combine(basePath, "images/red_dot.png");
+
+            statusImageList.Images.Add("online", Image.FromFile(onlineImagePath));
+            statusImageList.Images.Add("offline", Image.FromFile(offlineImagePath));
+
+            onlineUsersListBox.DrawItem += OnlineUsersListBox_DrawItem;
+            onlineUsersListBox.ItemHeight = statusImageList.ImageSize.Height + 2; // Adjust item height based on image size
+        }
+
+        private void OnlineUsersListBox_DrawItem(object sender, ListBoxDrawItemEventArgs e)
+        {
+            e.Appearance.DrawBackground(e.Cache, e.Bounds);
+
+            if (e.Index < 0) return;
+
+            string user = e.Item.ToString();
+            bool isOnline = onlineUsers.ContainsKey(user) && onlineUsers[user];
+            Image statusImage = isOnline ? statusImageList.Images["online"] : statusImageList.Images["offline"];
+            e.Cache.Graphics.DrawImage(statusImage, e.Bounds.Location);
+
+            Rectangle textRect = new Rectangle(e.Bounds.X + statusImage.Width + 2, e.Bounds.Y, e.Bounds.Width - statusImage.Width - 2, e.Bounds.Height);
+            e.Appearance.DrawString(e.Cache, user, textRect);
+
+            e.Handled = true;
         }
 
         private void MainForm_Load(object sender, EventArgs e)
@@ -29,6 +67,8 @@ namespace ChatClientApp
                 this.Close();
                 return;
             }
+
+            this.Text = "ChatBox" + " - " + username;
 
             clientSocket = new DealerSocket();
             clientSocket.Options.Identity = System.Text.Encoding.UTF8.GetBytes(username);
@@ -110,8 +150,21 @@ namespace ChatClientApp
                 return;
             }
 
+            foreach (var key in onlineUsers.Keys.ToList())
+            {
+                onlineUsers[key] = false;
+            }
+
+            foreach (var user in users)
+            {
+                onlineUsers[user] = true;
+            }
+
             onlineUsersListBox.Items.Clear();
-            onlineUsersListBox.Items.AddRange(users);
+            foreach (var user in onlineUsers.Keys)
+            {
+                onlineUsersListBox.Items.Add(user);
+            }
         }
     }
 }
