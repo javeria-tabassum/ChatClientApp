@@ -107,7 +107,7 @@ namespace ChatClientApp
             }
 
             SendMessage("MESSAGE", $"{recipient}:{message}");
-            AppendChatMessage(username, message); // Show the sender's name before the message
+            AppendChatMessage(username, message); 
             messageTextBox.Text = string.Empty;
         }
 
@@ -174,24 +174,6 @@ namespace ChatClientApp
             {
                 onlineUsersListBox.Items.Add(user);
                 recipientComboBox.Properties.Items.Add(user);
-            }
-        }
-
-        private void messageTextBox_Enter(object sender, EventArgs e)
-        {
-            if (messageTextBox.Text == "Type your message here...")
-            {
-                messageTextBox.Text = "";
-                messageTextBox.Properties.Appearance.ForeColor = Color.Black;
-            }
-        }
-
-        private void messageTextBox_Leave(object sender, EventArgs e)
-        {
-            if (string.IsNullOrWhiteSpace(messageTextBox.Text))
-            {
-                messageTextBox.Text = "Type your message here...";
-                messageTextBox.Properties.Appearance.ForeColor = Color.Gray;
             }
         }
     } }
