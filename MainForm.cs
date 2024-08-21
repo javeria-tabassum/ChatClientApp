@@ -17,10 +17,7 @@ namespace ChatClientApp
         private string username;
         private string serverAddress = "tcp://localhost:5555";
         private Dictionary<string, bool> onlineUsers = new Dictionary<string, bool>();
-<<<<<<< HEAD
-=======
 
->>>>>>> 0d44d1bea6ab0d1c5034fdfa436e905c9b6b0a2c
         private ImageList statusImageList;
 
         public MainForm()
