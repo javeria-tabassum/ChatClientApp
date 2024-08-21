@@ -20,6 +20,7 @@
 
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
             this.onlineUsersListBox = new DevExpress.XtraEditors.ListBoxControl();
             this.recipientTextBox = new DevExpress.XtraEditors.TextEdit();
             this.messageTextBox = new DevExpress.XtraEditors.TextEdit();
@@ -35,39 +36,39 @@
             // 
             this.onlineUsersListBox.Location = new System.Drawing.Point(12, 12);
             this.onlineUsersListBox.Name = "onlineUsersListBox";
-            this.onlineUsersListBox.Size = new System.Drawing.Size(200, 290);
+            this.onlineUsersListBox.Size = new System.Drawing.Size(156, 290);
             this.onlineUsersListBox.TabIndex = 0;
             // 
             // recipientTextBox
             // 
-            this.recipientTextBox.Location = new System.Drawing.Point(220, 12);
+            this.recipientTextBox.Location = new System.Drawing.Point(174, 12);
             this.recipientTextBox.Name = "recipientTextBox";
-            this.recipientTextBox.Size = new System.Drawing.Size(200, 20);
-            this.recipientTextBox.TabIndex = 1;
             this.recipientTextBox.Properties.NullValuePrompt = "Recipient";
+            this.recipientTextBox.Size = new System.Drawing.Size(246, 20);
+            this.recipientTextBox.TabIndex = 1;
             // 
             // messageTextBox
             // 
-            this.messageTextBox.Location = new System.Drawing.Point(220, 38);
+            this.messageTextBox.Location = new System.Drawing.Point(174, 38);
             this.messageTextBox.Name = "messageTextBox";
-            this.messageTextBox.Size = new System.Drawing.Size(200, 20);
-            this.messageTextBox.TabIndex = 2;
             this.messageTextBox.Properties.NullValuePrompt = "Message";
+            this.messageTextBox.Size = new System.Drawing.Size(246, 20);
+            this.messageTextBox.TabIndex = 2;
             // 
             // sendButton
             // 
-            this.sendButton.Location = new System.Drawing.Point(220, 64);
+            this.sendButton.Location = new System.Drawing.Point(174, 64);
             this.sendButton.Name = "sendButton";
-            this.sendButton.Size = new System.Drawing.Size(200, 23);
+            this.sendButton.Size = new System.Drawing.Size(246, 23);
             this.sendButton.TabIndex = 3;
             this.sendButton.Text = "Send";
             this.sendButton.Click += new System.EventHandler(this.sendButton_Click);
             // 
             // chatMemoEdit
             // 
-            this.chatMemoEdit.Location = new System.Drawing.Point(220, 93);
+            this.chatMemoEdit.Location = new System.Drawing.Point(174, 93);
             this.chatMemoEdit.Name = "chatMemoEdit";
-            this.chatMemoEdit.Size = new System.Drawing.Size(200, 209);
+            this.chatMemoEdit.Size = new System.Drawing.Size(246, 209);
             this.chatMemoEdit.TabIndex = 4;
             // 
             // MainForm
@@ -80,6 +81,7 @@
             this.Controls.Add(this.messageTextBox);
             this.Controls.Add(this.recipientTextBox);
             this.Controls.Add(this.onlineUsersListBox);
+            this.IconOptions.LargeImage = ((System.Drawing.Image)(resources.GetObject("MainForm.IconOptions.LargeImage")));
             this.Name = "MainForm";
             this.Text = "Chat Client";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.MainForm_FormClosing);
@@ -89,7 +91,7 @@
             ((System.ComponentModel.ISupportInitialize)(this.messageTextBox.Properties)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.chatMemoEdit.Properties)).EndInit();
             this.ResumeLayout(false);
-            this.PerformLayout();
+
         }
     }
 }
