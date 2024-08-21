@@ -42,13 +42,18 @@
             this.onlineUsersListBox.Dock = System.Windows.Forms.DockStyle.Fill;
             this.onlineUsersListBox.Location = new System.Drawing.Point(3, 3);
             this.onlineUsersListBox.Name = "onlineUsersListBox";
+<<<<<<< HEAD
             this.tablePanel.SetRow(this.onlineUsersListBox, 0);
             this.tablePanel.SetRowSpan(this.onlineUsersListBox, 4);
             this.onlineUsersListBox.Size = new System.Drawing.Size(124, 305);
+=======
+            this.onlineUsersListBox.Size = new System.Drawing.Size(156, 290);
+>>>>>>> 0d44d1bea6ab0d1c5034fdfa436e905c9b6b0a2c
             this.onlineUsersListBox.TabIndex = 0;
             // 
             // recipientTextBox
             // 
+<<<<<<< HEAD
             this.tablePanel.SetColumn(this.recipientTextBox, 1);
             this.recipientTextBox.Dock = System.Windows.Forms.DockStyle.Fill;
             this.recipientTextBox.Location = new System.Drawing.Point(133, 3);
@@ -56,10 +61,17 @@
             this.recipientTextBox.Properties.NullValuePrompt = "Recipient";
             this.tablePanel.SetRow(this.recipientTextBox, 0);
             this.recipientTextBox.Size = new System.Drawing.Size(298, 20);
+=======
+            this.recipientTextBox.Location = new System.Drawing.Point(174, 12);
+            this.recipientTextBox.Name = "recipientTextBox";
+            this.recipientTextBox.Properties.NullValuePrompt = "Recipient";
+            this.recipientTextBox.Size = new System.Drawing.Size(246, 20);
+>>>>>>> 0d44d1bea6ab0d1c5034fdfa436e905c9b6b0a2c
             this.recipientTextBox.TabIndex = 1;
             // 
             // messageTextBox
             // 
+<<<<<<< HEAD
             this.tablePanel.SetColumn(this.messageTextBox, 1);
             this.messageTextBox.Dock = System.Windows.Forms.DockStyle.Fill;
             this.messageTextBox.Location = new System.Drawing.Point(133, 27);
@@ -67,28 +79,46 @@
             this.messageTextBox.Properties.NullValuePrompt = "Message";
             this.tablePanel.SetRow(this.messageTextBox, 1);
             this.messageTextBox.Size = new System.Drawing.Size(298, 20);
+=======
+            this.messageTextBox.Location = new System.Drawing.Point(174, 38);
+            this.messageTextBox.Name = "messageTextBox";
+            this.messageTextBox.Properties.NullValuePrompt = "Message";
+            this.messageTextBox.Size = new System.Drawing.Size(246, 20);
+>>>>>>> 0d44d1bea6ab0d1c5034fdfa436e905c9b6b0a2c
             this.messageTextBox.TabIndex = 2;
             // 
             // sendButton
             // 
+<<<<<<< HEAD
             this.tablePanel.SetColumn(this.sendButton, 1);
             this.sendButton.Dock = System.Windows.Forms.DockStyle.Fill;
             this.sendButton.Location = new System.Drawing.Point(133, 51);
             this.sendButton.Name = "sendButton";
             this.tablePanel.SetRow(this.sendButton, 2);
             this.sendButton.Size = new System.Drawing.Size(298, 18);
+=======
+            this.sendButton.Location = new System.Drawing.Point(174, 64);
+            this.sendButton.Name = "sendButton";
+            this.sendButton.Size = new System.Drawing.Size(246, 23);
+>>>>>>> 0d44d1bea6ab0d1c5034fdfa436e905c9b6b0a2c
             this.sendButton.TabIndex = 3;
             this.sendButton.Text = "Send";
             this.sendButton.Click += new System.EventHandler(this.sendButton_Click);
             // 
             // chatMemoEdit
             // 
+<<<<<<< HEAD
             this.tablePanel.SetColumn(this.chatMemoEdit, 1);
             this.chatMemoEdit.Dock = System.Windows.Forms.DockStyle.Fill;
             this.chatMemoEdit.Location = new System.Drawing.Point(133, 75);
             this.chatMemoEdit.Name = "chatMemoEdit";
             this.tablePanel.SetRow(this.chatMemoEdit, 3);
             this.chatMemoEdit.Size = new System.Drawing.Size(298, 233);
+=======
+            this.chatMemoEdit.Location = new System.Drawing.Point(174, 93);
+            this.chatMemoEdit.Name = "chatMemoEdit";
+            this.chatMemoEdit.Size = new System.Drawing.Size(246, 209);
+>>>>>>> 0d44d1bea6ab0d1c5034fdfa436e905c9b6b0a2c
             this.chatMemoEdit.TabIndex = 4;
             // 
             // tablePanel
@@ -117,7 +147,15 @@
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(434, 311);
+<<<<<<< HEAD
             this.Controls.Add(this.tablePanel);
+=======
+            this.Controls.Add(this.chatMemoEdit);
+            this.Controls.Add(this.sendButton);
+            this.Controls.Add(this.messageTextBox);
+            this.Controls.Add(this.recipientTextBox);
+            this.Controls.Add(this.onlineUsersListBox);
+>>>>>>> 0d44d1bea6ab0d1c5034fdfa436e905c9b6b0a2c
             this.IconOptions.LargeImage = ((System.Drawing.Image)(resources.GetObject("MainForm.IconOptions.LargeImage")));
             this.Name = "MainForm";
             this.Text = "Chat Client";
