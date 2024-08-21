@@ -100,6 +100,12 @@ namespace ChatClientApp
                 return;
             }
 
+            if (recipient == username)
+            {
+                MessageBox.Show("You cannot send a message to yourself.");
+                return;
+            }
+
             SendMessage("MESSAGE", $"{recipient}:{message}");
             AppendChatMessage(username, message); // Show the sender's name before the message
             messageTextBox.Text = string.Empty;
