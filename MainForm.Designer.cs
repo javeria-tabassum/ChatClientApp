@@ -82,6 +82,7 @@
             // 
             this.onlineUsersListBox.Location = new System.Drawing.Point(520, 54);
             this.onlineUsersListBox.Name = "onlineUsersListBox";
+            this.onlineUsersListBox.SelectionMode = System.Windows.Forms.SelectionMode.None;
             this.onlineUsersListBox.Size = new System.Drawing.Size(194, 360);
             this.onlineUsersListBox.TabIndex = 4;
             // 
@@ -91,9 +92,9 @@
             this.onlineUsersLabel.Appearance.Options.UseFont = true;
             this.onlineUsersLabel.Location = new System.Drawing.Point(521, 32);
             this.onlineUsersLabel.Name = "onlineUsersLabel";
-            this.onlineUsersLabel.Size = new System.Drawing.Size(67, 14);
+            this.onlineUsersLabel.Size = new System.Drawing.Size(45, 14);
             this.onlineUsersLabel.TabIndex = 5;
-            this.onlineUsersLabel.Text = "Online Users";
+            this.onlineUsersLabel.Text = "All Users";
             // 
             // label1
             // 

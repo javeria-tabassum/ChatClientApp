@@ -17,13 +17,14 @@ namespace ChatClientApp
         private string username;
         private string serverAddress = "tcp://localhost:5555";
         private Dictionary<string, bool> onlineUsers = new Dictionary<string, bool>();
-
+        private Timer connectionCheckTimer;
         private ImageList statusImageList;
 
         public MainForm()
         {
             InitializeComponent();
             InitializeStatusImageList();
+            //InitializeConnectionCheckTimer();
         }
 
         private void InitializeStatusImageList()
@@ -102,13 +103,14 @@ namespace ChatClientApp
 
             if (recipient == username)
             {
-                MessageBox.Show("You cannot send a message to yourself.");
-                return;
+                MessageBox.Show("You can not send message to yourself.");
             }
-
-            SendMessage("MESSAGE", $"{recipient}:{message}");
-            AppendChatMessage(username, message); 
-            messageTextBox.Text = string.Empty;
+            else
+            {
+                SendMessage("MESSAGE", $"{recipient}:{message}");
+                AppendChatMessage(username, message);
+                messageTextBox.Text = string.Empty;
+            }
         }
 
         private void SendMessage(string messageType, string message)
@@ -176,4 +178,24 @@ namespace ChatClientApp
                 recipientComboBox.Properties.Items.Add(user);
             }
         }
-    } }
+
+        //private void InitializeConnectionCheckTimer()
+        //{
+        //    connectionCheckTimer = new Timer();
+        //    connectionCheckTimer.Interval = 5000; // 5 seconds
+        //    connectionCheckTimer.Tick += ConnectionCheckTimer_Tick;
+        //    connectionCheckTimer.Start();
+        //}
+
+        //private void ConnectionCheckTimer_Tick(object sender, EventArgs e)
+        //{
+
+        //    SendMessage("PING", string.Empty);
+        //    bool pongReceived = clientSocket.TryReceiveFrameString(TimeSpan.FromMilliseconds(5000), out var response);
+        //    if (!pongReceived && response != "PONG")
+        //    {
+        //        MessageBox.Show("Server disconnected");
+        //    }
+        //}
+    } 
+}
