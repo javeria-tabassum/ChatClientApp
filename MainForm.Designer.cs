@@ -1,4 +1,4 @@
-﻿namespace ChatClientApp
+namespace ChatClientApp
 {
     partial class MainForm
     {
@@ -6,7 +6,7 @@
         private DevExpress.XtraEditors.MemoEdit chatMemoEdit;
         private DevExpress.XtraEditors.SimpleButton sendButton;
         private DevExpress.XtraEditors.MemoEdit messageTextBox;
-        private DevExpress.XtraEditors.ListBoxControl onlineUsersListBox;
+        private DevExpress.XtraEditors.ListBoxControl UsersListBox;
         private DevExpress.XtraEditors.ComboBoxEdit recipientComboBox;
         private DevExpress.XtraEditors.LabelControl onlineUsersLabel;
         private DevExpress.XtraEditors.LabelControl label1;
@@ -30,14 +30,14 @@
             this.chatMemoEdit = new DevExpress.XtraEditors.MemoEdit();
             this.sendButton = new DevExpress.XtraEditors.SimpleButton();
             this.messageTextBox = new DevExpress.XtraEditors.MemoEdit();
-            this.onlineUsersListBox = new DevExpress.XtraEditors.ListBoxControl();
+            this.UsersListBox = new DevExpress.XtraEditors.ListBoxControl();
             this.onlineUsersLabel = new DevExpress.XtraEditors.LabelControl();
             this.label1 = new DevExpress.XtraEditors.LabelControl();
             this.label2 = new DevExpress.XtraEditors.LabelControl();
             ((System.ComponentModel.ISupportInitialize)(this.recipientComboBox.Properties)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.chatMemoEdit.Properties)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.messageTextBox.Properties)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.onlineUsersListBox)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.UsersListBox)).BeginInit();
             this.SuspendLayout();
             // 
             // recipientComboBox
@@ -80,11 +80,11 @@
             // 
             // onlineUsersListBox
             // 
-            this.onlineUsersListBox.Location = new System.Drawing.Point(520, 54);
-            this.onlineUsersListBox.Name = "onlineUsersListBox";
-            this.onlineUsersListBox.SelectionMode = System.Windows.Forms.SelectionMode.None;
-            this.onlineUsersListBox.Size = new System.Drawing.Size(194, 360);
-            this.onlineUsersListBox.TabIndex = 4;
+            this.UsersListBox.Location = new System.Drawing.Point(520, 54);
+            this.UsersListBox.Name = "onlineUsersListBox";
+            this.UsersListBox.SelectionMode = System.Windows.Forms.SelectionMode.None;
+            this.UsersListBox.Size = new System.Drawing.Size(194, 360);
+            this.UsersListBox.TabIndex = 4;
             // 
             // onlineUsersLabel
             // 
@@ -122,7 +122,7 @@
             this.Controls.Add(this.label2);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.onlineUsersLabel);
-            this.Controls.Add(this.onlineUsersListBox);
+            this.Controls.Add(this.UsersListBox);
             this.Controls.Add(this.messageTextBox);
             this.Controls.Add(this.sendButton);
             this.Controls.Add(this.chatMemoEdit);
@@ -135,7 +135,7 @@
             ((System.ComponentModel.ISupportInitialize)(this.recipientComboBox.Properties)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.chatMemoEdit.Properties)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.messageTextBox.Properties)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.onlineUsersListBox)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.UsersListBox)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
