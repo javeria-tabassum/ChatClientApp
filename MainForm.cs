@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
@@ -16,15 +16,20 @@ namespace ChatClientApp
         private DealerSocket clientSocket;
         private string username;
         private string serverAddress = "tcp://localhost:5555";
+        private HashSet<string> allUsers = new HashSet<string>();
         private Dictionary<string, bool> onlineUsers = new Dictionary<string, bool>();
-        private Timer connectionCheckTimer;
+        private Timer heartbeatTimer;
+        private Timer serverCheckTimer;
         private ImageList statusImageList;
+        private bool serverIsConnected = true;
+        private DateTime lastServerResponseTime;
 
         public MainForm()
         {
             InitializeComponent();
             InitializeStatusImageList();
-            //InitializeConnectionCheckTimer();
+            InitializeHeartbeatTimer();
+            InitializeServerCheckTimer();
         }
 
         private void InitializeStatusImageList()
@@ -37,11 +42,54 @@ namespace ChatClientApp
             statusImageList.Images.Add("online", Image.FromFile(onlineImagePath));
             statusImageList.Images.Add("offline", Image.FromFile(offlineImagePath));
 
-            onlineUsersListBox.DrawItem += OnlineUsersListBox_DrawItem;
-            onlineUsersListBox.ItemHeight = statusImageList.ImageSize.Height + 2; // Adjust item height based on image size
+            UsersListBox.DrawItem += UsersListBox_DrawItem;
+            UsersListBox.ItemHeight = statusImageList.ImageSize.Height + 2;
         }
 
-        private void OnlineUsersListBox_DrawItem(object sender, ListBoxDrawItemEventArgs e)
+        private void InitializeHeartbeatTimer()
+        {
+            heartbeatTimer = new Timer();
+            heartbeatTimer.Interval = 5000; // 5 seconds
+            heartbeatTimer.Tick += HeartbeatTimer_Tick;
+            heartbeatTimer.Start();
+        }
+
+        private void InitializeServerCheckTimer()
+        {
+            serverCheckTimer = new Timer();
+            serverCheckTimer.Interval = 10000; // 10 seconds
+            serverCheckTimer.Tick += ServerCheckTimer_Tick;
+            serverCheckTimer.Start();
+        }
+
+        private void HeartbeatTimer_Tick(object sender, EventArgs e)
+        {
+            if (serverIsConnected)
+            {
+                SendMessage("PING", string.Empty);
+            }
+        }
+
+        private void ServerCheckTimer_Tick(object sender, EventArgs e)
+        {
+            if (serverIsConnected)
+            {
+                TimeSpan timeSinceLastResponse = DateTime.Now - lastServerResponseTime;
+                if (timeSinceLastResponse.TotalMilliseconds > 10000) // 10 seconds
+                {
+                    serverIsConnected = false; // Assume server is disconnected
+                    MarkAllUsersOffline(); // Update UI to reflect offline status
+                    Console.WriteLine("Server is considered disconnected.");
+                }
+            }
+            else
+            {
+                MarkAllUsersOffline(); // Update UI to reflect offline status
+                Console.WriteLine("Server is still disconnected.");
+            }
+        }
+
+        private void UsersListBox_DrawItem(object sender, ListBoxDrawItemEventArgs e)
         {
             e.Appearance.DrawBackground(e.Cache, e.Bounds);
 
@@ -72,6 +120,9 @@ namespace ChatClientApp
 
             this.Text = "ChatBox" + " - " + username;
 
+            allUsers.Add(username); // Add user to the list of all users
+            onlineUsers[username] = true; // Mark self as online initially
+
             clientSocket = new DealerSocket();
             clientSocket.Options.Identity = System.Text.Encoding.UTF8.GetBytes(username);
             clientSocket.Connect(serverAddress);
@@ -81,13 +132,18 @@ namespace ChatClientApp
             poller.RunAsync();
 
             SendMessage("CONNECT", username);
+            UpdateOnlineUsers(allUsers.ToArray()); // Initialize the UI with all users
         }
 
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
             SendMessage("DISCONNECT", username);
+            onlineUsers[username] = false; // Mark self as offline
             clientSocket.Disconnect(serverAddress);
             clientSocket.Close();
+
+            // Refresh the UI to show the user as offline
+            RefreshUserList();
         }
 
         private void sendButton_Click(object sender, EventArgs e)
@@ -103,7 +159,7 @@ namespace ChatClientApp
 
             if (recipient == username)
             {
-                MessageBox.Show("You can not send message to yourself.");
+                MessageBox.Show("You cannot send a message to yourself.");
             }
             else
             {
@@ -137,6 +193,57 @@ namespace ChatClientApp
             {
                 var users = message.Split(',');
                 UpdateOnlineUsers(users);
+                serverIsConnected = true; // Server is responsive
+                lastServerResponseTime = DateTime.Now; // Update last server response time
+                Console.WriteLine("Server response received: ONLINE_USERS");
+
+                // Mark users as online immediately
+                foreach (var user in users)
+                {
+                    if (onlineUsers.ContainsKey(user))
+                    {
+                        onlineUsers[user] = true;
+                    }
+                    else
+                    {
+                        onlineUsers.Add(user, true);
+                    }
+                }
+
+                // Refresh UI
+                RefreshUserList();
+            }
+            else if (messageType == "PONG")
+            {
+                serverIsConnected = true; // Server is responsive
+                lastServerResponseTime = DateTime.Now; // Update last server response time
+                Console.WriteLine("Server response received: PONG");
+
+                // Request an updated list of online users after receiving PONG
+                SendMessage("REQUEST_ONLINE_USERS", string.Empty);
+            }
+        }
+
+        private void RefreshUserList()
+        {
+            if (InvokeRequired)
+            {
+                Invoke(new Action(RefreshUserList));
+                return;
+            }
+
+            UsersListBox.Items.Clear();
+            recipientComboBox.Properties.Items.Clear();
+
+            foreach (var user in allUsers)
+            {
+                UsersListBox.Items.Add(user);
+
+                // Only add online users to the recipient list
+                if (onlineUsers.ContainsKey(user) && onlineUsers[user])
+                {
+                    recipientComboBox.Properties.Items.Add(user);
+                }
             }
         }
 
@@ -159,43 +266,48 @@ namespace ChatClientApp
                 return;
             }
 
-            foreach (var key in onlineUsers.Keys.ToList())
+            // Update allUsers set with received users
+            var updatedUsers = new HashSet<string>(users);
+
+            // Mark all current users as offline if they are not in the updated list
+            foreach (var user in onlineUsers.Keys.ToList())
             {
-                onlineUsers[key] = false;
+                if (!updatedUsers.Contains(user))
+                {
+                    onlineUsers[user] = false; // Mark as offline instead of removing
+                }
             }
 
-            foreach (var user in users)
+            // Mark users as online if they are in the updated list
+            foreach (var user in updatedUsers)
             {
                 onlineUsers[user] = true;
+                if (!allUsers.Contains(user))
+                {
+                    allUsers.Add(user); // Add new users to the full list
+                }
             }
 
-            onlineUsersListBox.Items.Clear();
-            recipientComboBox.Properties.Items.Clear();
-
-            foreach (var user in onlineUsers.Keys)
-            {
-                onlineUsersListBox.Items.Add(user);
-                recipientComboBox.Properties.Items.Add(user);
-            }
+            // Refresh the UI with all users but only online users in the recipient combo box
+            RefreshUserList();
         }
 
-        //private void InitializeConnectionCheckTimer()
-        //{
-        //    connectionCheckTimer = new Timer();
-        //    connectionCheckTimer.Interval = 5000; // 5 seconds
-        //    connectionCheckTimer.Tick += ConnectionCheckTimer_Tick;
-        //    connectionCheckTimer.Start();
-        //}
+        private void MarkAllUsersOffline()
+        {
+            if (InvokeRequired)
+            {
+                Invoke(new Action(MarkAllUsersOffline));
+                return;
+            }
 
-        //private void ConnectionCheckTimer_Tick(object sender, EventArgs e)
-        //{
+            foreach (var user in allUsers.ToList())
+            {
+                onlineUsers[user] = false;
+            }
 
-        //    SendMessage("PING", string.Empty);
-        //    bool pongReceived = clientSocket.TryReceiveFrameString(TimeSpan.FromMilliseconds(5000), out var response);
-        //    if (!pongReceived && response != "PONG")
-        //    {
-        //        MessageBox.Show("Server disconnected");
-        //    }
-        //}
-    } 
+            // Refresh the UI with offline statuses
+            RefreshUserList();
+            Console.WriteLine("All users marked as offline.");
+        }
+    }
 }
