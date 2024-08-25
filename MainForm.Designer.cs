@@ -3,14 +3,12 @@ namespace ChatClientApp
     partial class MainForm
     {
         private System.ComponentModel.IContainer components = null;
-        private DevExpress.XtraEditors.MemoEdit chatMemoEdit;
-        private DevExpress.XtraEditors.SimpleButton sendButton;
+        private DevExpress.XtraTab.XtraTabControl chatTabControl;
         private DevExpress.XtraEditors.MemoEdit messageTextBox;
+        private DevExpress.XtraEditors.SimpleButton sendButton;
         private DevExpress.XtraEditors.ListBoxControl UsersListBox;
         private DevExpress.XtraEditors.ComboBoxEdit recipientComboBox;
-        private DevExpress.XtraEditors.LabelControl onlineUsersLabel;
-        private DevExpress.XtraEditors.LabelControl label1;
-        private DevExpress.XtraEditors.LabelControl label2;
+        private System.Windows.Forms.Panel inputPanel;
 
         protected override void Dispose(bool disposing)
         {
@@ -21,126 +19,97 @@ namespace ChatClientApp
             base.Dispose(disposing);
         }
 
-        #region Windows Form Designer generated code
-
         private void InitializeComponent()
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
-            this.recipientComboBox = new DevExpress.XtraEditors.ComboBoxEdit();
-            this.chatMemoEdit = new DevExpress.XtraEditors.MemoEdit();
-            this.sendButton = new DevExpress.XtraEditors.SimpleButton();
-            this.messageTextBox = new DevExpress.XtraEditors.MemoEdit();
+            this.chatTabControl = new DevExpress.XtraTab.XtraTabControl();
             this.UsersListBox = new DevExpress.XtraEditors.ListBoxControl();
-            this.onlineUsersLabel = new DevExpress.XtraEditors.LabelControl();
-            this.label1 = new DevExpress.XtraEditors.LabelControl();
-            this.label2 = new DevExpress.XtraEditors.LabelControl();
-            ((System.ComponentModel.ISupportInitialize)(this.recipientComboBox.Properties)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.chatMemoEdit.Properties)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.messageTextBox.Properties)).BeginInit();
+            this.messageTextBox = new DevExpress.XtraEditors.MemoEdit();
+            this.sendButton = new DevExpress.XtraEditors.SimpleButton();
+            this.recipientComboBox = new DevExpress.XtraEditors.ComboBoxEdit();
+            this.inputPanel = new System.Windows.Forms.Panel();
+            ((System.ComponentModel.ISupportInitialize)(this.chatTabControl)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.UsersListBox)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.messageTextBox.Properties)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.recipientComboBox.Properties)).BeginInit();
+            this.inputPanel.SuspendLayout();
             this.SuspendLayout();
             // 
-            // recipientComboBox
+            // chatTabControl
             // 
-            this.recipientComboBox.Location = new System.Drawing.Point(127, 32);
-            this.recipientComboBox.Name = "recipientComboBox";
-            this.recipientComboBox.Properties.Buttons.AddRange(new DevExpress.XtraEditors.Controls.EditorButton[] {
-            new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Combo)});
-            this.recipientComboBox.Size = new System.Drawing.Size(330, 20);
-            this.recipientComboBox.TabIndex = 0;
+            this.chatTabControl.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.chatTabControl.Location = new System.Drawing.Point(175, 0);
+            this.chatTabControl.Name = "chatTabControl";
+            this.chatTabControl.Size = new System.Drawing.Size(588, 421);
+            this.chatTabControl.TabIndex = 0;
+            this.chatTabControl.SelectedPageChanged += new DevExpress.XtraTab.TabPageChangedEventHandler(this.chatTabControl_SelectedPageChanged);
             // 
-            // chatMemoEdit
+            // UsersListBox
             // 
-            this.chatMemoEdit.Location = new System.Drawing.Point(12, 93);
-            this.chatMemoEdit.Name = "chatMemoEdit";
-            this.chatMemoEdit.Properties.ReadOnly = true;
-            this.chatMemoEdit.Size = new System.Drawing.Size(490, 259);
-            this.chatMemoEdit.TabIndex = 1;
-            // 
-            // sendButton
-            // 
-            this.sendButton.Location = new System.Drawing.Point(427, 372);
-            this.sendButton.Name = "sendButton";
-            this.sendButton.Size = new System.Drawing.Size(75, 42);
-            this.sendButton.TabIndex = 2;
-            this.sendButton.Text = "Send";
-            this.sendButton.Click += new System.EventHandler(this.sendButton_Click);
+            this.UsersListBox.Dock = System.Windows.Forms.DockStyle.Left;
+            this.UsersListBox.Location = new System.Drawing.Point(0, 0);
+            this.UsersListBox.Name = "UsersListBox";
+            this.UsersListBox.Size = new System.Drawing.Size(175, 471);
+            this.UsersListBox.TabIndex = 1;
+            this.UsersListBox.SelectedIndexChanged += new System.EventHandler(this.UsersListBox_SelectedIndexChanged);
             // 
             // messageTextBox
             // 
             this.messageTextBox.EditValue = "Type your message here...";
-            this.messageTextBox.Location = new System.Drawing.Point(12, 372);
+            this.messageTextBox.Location = new System.Drawing.Point(0, 0);
             this.messageTextBox.Name = "messageTextBox";
-            this.messageTextBox.Properties.Appearance.ForeColor = System.Drawing.Color.Gray;
-            this.messageTextBox.Properties.Appearance.Options.UseForeColor = true;
-            this.messageTextBox.Properties.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.HotFlat;
-            this.messageTextBox.Properties.ScrollBars = System.Windows.Forms.ScrollBars.None;
-            this.messageTextBox.Size = new System.Drawing.Size(409, 43);
-            this.messageTextBox.TabIndex = 3;
+            this.messageTextBox.Size = new System.Drawing.Size(509, 47);
+            this.messageTextBox.TabIndex = 2;
             // 
-            // onlineUsersListBox
+            // sendButton
             // 
-            this.UsersListBox.Location = new System.Drawing.Point(520, 54);
-            this.UsersListBox.Name = "onlineUsersListBox";
-            this.UsersListBox.SelectionMode = System.Windows.Forms.SelectionMode.None;
-            this.UsersListBox.Size = new System.Drawing.Size(194, 360);
-            this.UsersListBox.TabIndex = 4;
+            this.sendButton.Location = new System.Drawing.Point(515, 0);
+            this.sendButton.Name = "sendButton";
+            this.sendButton.Size = new System.Drawing.Size(73, 47);
+            this.sendButton.TabIndex = 3;
+            this.sendButton.Text = "Send";
+            this.sendButton.Click += new System.EventHandler(this.sendButton_Click);
             // 
-            // onlineUsersLabel
+            // recipientComboBox
             // 
-            this.onlineUsersLabel.Appearance.Font = new System.Drawing.Font("Tahoma", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.onlineUsersLabel.Appearance.Options.UseFont = true;
-            this.onlineUsersLabel.Location = new System.Drawing.Point(521, 32);
-            this.onlineUsersLabel.Name = "onlineUsersLabel";
-            this.onlineUsersLabel.Size = new System.Drawing.Size(45, 14);
-            this.onlineUsersLabel.TabIndex = 5;
-            this.onlineUsersLabel.Text = "All Users";
+            this.recipientComboBox.Location = new System.Drawing.Point(175, 65);
+            this.recipientComboBox.Name = "recipientComboBox";
+            this.recipientComboBox.Properties.Buttons.AddRange(new DevExpress.XtraEditors.Controls.EditorButton[] {
+            new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Combo)});
+            this.recipientComboBox.Size = new System.Drawing.Size(525, 22);
+            this.recipientComboBox.TabIndex = 4;
             // 
-            // label1
+            // inputPanel
             // 
-            this.label1.Appearance.Font = new System.Drawing.Font("Tahoma", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label1.Appearance.Options.UseFont = true;
-            this.label1.Location = new System.Drawing.Point(12, 34);
-            this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(88, 14);
-            this.label1.TabIndex = 6;
-            this.label1.Text = "Select Recipient";
-            // 
-            // label2
-            // 
-            this.label2.Appearance.Font = new System.Drawing.Font("Tahoma", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label2.Appearance.Options.UseFont = true;
-            this.label2.Location = new System.Drawing.Point(13, 66);
-            this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(51, 14);
-            this.label2.TabIndex = 7;
-            this.label2.Text = "Messages";
+            this.inputPanel.Controls.Add(this.messageTextBox);
+            this.inputPanel.Controls.Add(this.sendButton);
+            this.inputPanel.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.inputPanel.Location = new System.Drawing.Point(175, 421);
+            this.inputPanel.Name = "inputPanel";
+            this.inputPanel.Size = new System.Drawing.Size(588, 50);
+            this.inputPanel.TabIndex = 5;
             // 
             // MainForm
             // 
-            this.ClientSize = new System.Drawing.Size(748, 433);
-            this.Controls.Add(this.label2);
-            this.Controls.Add(this.label1);
-            this.Controls.Add(this.onlineUsersLabel);
-            this.Controls.Add(this.UsersListBox);
-            this.Controls.Add(this.messageTextBox);
-            this.Controls.Add(this.sendButton);
-            this.Controls.Add(this.chatMemoEdit);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 16F);
+            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.ClientSize = new System.Drawing.Size(763, 471);
+            this.Controls.Add(this.chatTabControl);
             this.Controls.Add(this.recipientComboBox);
+            this.Controls.Add(this.inputPanel);
+            this.Controls.Add(this.UsersListBox);
             this.IconOptions.LargeImage = ((System.Drawing.Image)(resources.GetObject("MainForm.IconOptions.LargeImage")));
             this.Name = "MainForm";
-            this.Text = "Chat Client";
+            this.Text = "Chat Application";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.MainForm_FormClosing);
             this.Load += new System.EventHandler(this.MainForm_Load);
-            ((System.ComponentModel.ISupportInitialize)(this.recipientComboBox.Properties)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.chatMemoEdit.Properties)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.messageTextBox.Properties)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.chatTabControl)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.UsersListBox)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.messageTextBox.Properties)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.recipientComboBox.Properties)).EndInit();
+            this.inputPanel.ResumeLayout(false);
             this.ResumeLayout(false);
-            this.PerformLayout();
 
         }
-
-        #endregion
     }
 }
