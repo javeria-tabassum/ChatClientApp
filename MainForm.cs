@@ -49,7 +49,7 @@ namespace ChatClientApp
         private void InitializeHeartbeatTimer()
         {
             heartbeatTimer = new Timer();
-            heartbeatTimer.Interval = 5000; // 5 seconds
+            heartbeatTimer.Interval = 1000;
             heartbeatTimer.Tick += HeartbeatTimer_Tick;
             heartbeatTimer.Start();
         }
@@ -57,7 +57,7 @@ namespace ChatClientApp
         private void InitializeServerCheckTimer()
         {
             serverCheckTimer = new Timer();
-            serverCheckTimer.Interval = 10000; // 10 seconds
+            serverCheckTimer.Interval = 3000;
             serverCheckTimer.Tick += ServerCheckTimer_Tick;
             serverCheckTimer.Start();
         }
@@ -75,7 +75,7 @@ namespace ChatClientApp
             if (serverIsConnected)
             {
                 TimeSpan timeSinceLastResponse = DateTime.Now - lastServerResponseTime;
-                if (timeSinceLastResponse.TotalMilliseconds > 10000) // 10 seconds
+                if (timeSinceLastResponse.TotalMilliseconds > 5000) // 10 seconds
                 {
                     serverIsConnected = false; // Assume server is disconnected
                     MarkAllUsersOffline(); // Update UI to reflect offline status
