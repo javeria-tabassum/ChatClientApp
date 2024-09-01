@@ -1,13 +1,14 @@
 using DevExpress.XtraEditors;
-using NetMQ.Sockets;
 using NetMQ;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.StartPanel;
+using NetMQ.Sockets;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Windows.Forms;
-using System;
+
 namespace ChatClientApp
 {
     public partial class MainForm : XtraForm
@@ -19,6 +20,7 @@ namespace ChatClientApp
         private Timer serverCheckTimer;
         private DealerSocket clientSocket;
         private HashSet<string> allUsers = new HashSet<string>();
+        private HashSet<string> offlineUsers = new HashSet<string>();
         private Dictionary<string, bool> onlineUsers = new Dictionary<string, bool>();
         private bool serverIsConnected;
         private DateTime lastServerResponseTime;
@@ -49,7 +51,7 @@ namespace ChatClientApp
         private void InitializeHeartbeatTimer()
         {
             heartbeatTimer = new Timer();
-            heartbeatTimer.Interval = 1000;
+            heartbeatTimer.Interval = 5000;
             heartbeatTimer.Tick += HeartbeatTimer_Tick;
             heartbeatTimer.Start();
         }
@@ -57,7 +59,7 @@ namespace ChatClientApp
         private void InitializeServerCheckTimer()
         {
             serverCheckTimer = new Timer();
-            serverCheckTimer.Interval = 3000;
+            serverCheckTimer.Interval = 5000;
             serverCheckTimer.Tick += ServerCheckTimer_Tick;
             serverCheckTimer.Start();
         }
@@ -75,10 +77,11 @@ namespace ChatClientApp
             if (serverIsConnected)
             {
                 TimeSpan timeSinceLastResponse = DateTime.Now - lastServerResponseTime;
-                if (timeSinceLastResponse.TotalMilliseconds > 5000) // 10 seconds
+                if (timeSinceLastResponse.TotalMilliseconds > 10000) // 5 seconds
                 {
                     serverIsConnected = false; // Assume server is disconnected
                     MarkAllUsersOffline(); // Update UI to reflect offline status
+                    RequestOfflineUsers(); // Request offline users list
                     Console.WriteLine("Server is considered disconnected.");
                 }
             }
@@ -196,13 +199,49 @@ namespace ChatClientApp
                 lastServerResponseTime = DateTime.Now; // Update last server response time
                 Console.WriteLine("Server response received: ONLINE_USERS");
             }
+            else if (messageType == "OFFLINE_USERS")
+            {
+                var users = message.Split(',');
+                UpdateOfflineUsers(users);
+                Console.WriteLine("Server response received: OFFLINE_USERS");
+            }
             else if (messageType == "PONG")
             {
+                if (!serverIsConnected)
+                {
+                    // Send the offline user list to the server
+                    var offlineUsersList = string.Join(",", offlineUsers);
+                    SendMessage("UPDATE_OFFLINE_USERS", offlineUsersList);
+                }
                 serverIsConnected = true; // Server is responsive
                 lastServerResponseTime = DateTime.Now; // Update last server response time
                 Console.WriteLine("Server response received: PONG");
                 SendMessage("REQUEST_ONLINE_USERS", string.Empty);
             }
+        }
+
+        private void UpdateOfflineUsers(string[] users)
+        {
+            // Add received offline users to the offline list
+            offlineUsers = new HashSet<string>(allUsers);
+
+            // Update online users based on offline users received
+            foreach (var user in offlineUsers)
+            {
+                if (allUsers.Contains(user))
+                {
+                    onlineUsers[user] = true; // Mark user as online
+                }
+            }
+
+            // Refresh user list to update UI
+            RefreshUserList();
+        }
+
+
+        private void RequestOfflineUsers()
+        {
+            SendMessage("REQUEST_OFFLINE_USERS", string.Empty);
         }
 
         private void AddChatTab(string recipient)
@@ -265,14 +304,31 @@ namespace ChatClientApp
                 Invoke(new Action(RefreshUserList));
                 return;
             }
+            // Store the currently selected item
+            var selectedItem = UsersListBox.SelectedItem;
 
+            // Create a list of current items to update
+            var currentItems = new List<string>(UsersListBox.Items.Cast<string>());
             UsersListBox.Items.Clear();
 
+
+            // Add new items
             foreach (var user in allUsers)
             {
-                UsersListBox.Items.Add(user);
+                if (!UsersListBox.Items.Contains(user))
+                {
+                    UsersListBox.Items.Add(user);
+                }
+            }
+
+            // Re-select the previously selected item if it still exists
+            if (selectedItem != null && UsersListBox.Items.Contains(selectedItem))
+            {
+                UsersListBox.SelectedItem = selectedItem;
             }
         }
+
+
 
         private void UpdateOnlineUsers(string[] users)
         {
@@ -283,9 +339,11 @@ namespace ChatClientApp
             }
 
             // Update allUsers set with received users
+
             var updatedUsers = new HashSet<string>(users);
 
             // Mark all current users as offline if they are not in the updated list
+
             foreach (var user in onlineUsers.Keys.ToList())
             {
                 if (!updatedUsers.Contains(user))
@@ -293,41 +351,40 @@ namespace ChatClientApp
                     onlineUsers[user] = false;
                 }
             }
-
             // Update the online status for new users
             foreach (var user in updatedUsers)
+
             {
                 onlineUsers[user] = true;
                 if (!allUsers.Contains(user))
                 {
+
                     allUsers.Add(user);
                 }
             }
-
             RefreshUserList(); // Refresh the UI
         }
 
         private void MarkAllUsersOffline()
         {
-            if (InvokeRequired)
-            {
-                Invoke(new Action(MarkAllUsersOffline));
-                return;
-            }
-
             foreach (var user in onlineUsers.Keys.ToList())
             {
                 onlineUsers[user] = false;
             }
-
-            RefreshUserList(); // Refresh the UI to mark all users as offline
+            RefreshUserList();
         }
-
         private void UsersListBox_SelectedIndexChanged(object sender, EventArgs e)
         {
             if (UsersListBox.SelectedItem != null)
             {
                 currentRecipient = UsersListBox.SelectedItem.ToString();
+
+                // Select the corresponding tab
+                var tabToSelect = chatTabControl.TabPages.FirstOrDefault(tp => tp.Text == currentRecipient);
+                if (tabToSelect != null)
+                {
+                    chatTabControl.SelectedTabPage = tabToSelect;
+                }
             }
         }
 
@@ -336,7 +393,11 @@ namespace ChatClientApp
             if (e.Page != null)
             {
                 currentRecipient = e.Page.Text;
+
+                // Select the corresponding user in the list box
+                UsersListBox.SelectedItem = currentRecipient;
             }
         }
+
     }
 }
