@@ -77,8 +77,8 @@ namespace ChatClientApp
                     serverIsConnected = false;
                     MarkAllUsersOffline();
                     Console.WriteLine("Server is considered disconnected.");
+                    SendMessage("RECONNECT", username);
                 }
-                SendMessage("RECONNECTED", username);
             }
             else
             {
