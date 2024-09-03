@@ -1,12 +1,12 @@
 using DevExpress.XtraEditors;
 using NetMQ;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.StartPanel;
 using NetMQ.Sockets;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace ChatClientApp
@@ -40,10 +40,8 @@ namespace ChatClientApp
             string basePath = AppDomain.CurrentDomain.BaseDirectory;
             string onlineImagePath = Path.Combine(basePath, "images/green_dot.png");
             string offlineImagePath = Path.Combine(basePath, "images/red_dot.png");
-
             statusImageList.Images.Add("online", Image.FromFile(onlineImagePath));
             statusImageList.Images.Add("offline", Image.FromFile(offlineImagePath));
-
             UsersListBox.DrawItem += UsersListBox_DrawItem;
             UsersListBox.ItemHeight = statusImageList.ImageSize.Height + 2;
         }
@@ -51,43 +49,40 @@ namespace ChatClientApp
         private void InitializeHeartbeatTimer()
         {
             heartbeatTimer = new Timer();
-            heartbeatTimer.Interval = 5000;
-            heartbeatTimer.Tick += HeartbeatTimer_Tick;
+            heartbeatTimer.Interval = 1000;
+            heartbeatTimer.Tick += (sender, e) => HeartbeatTimer_Tick();
             heartbeatTimer.Start();
         }
 
         private void InitializeServerCheckTimer()
         {
             serverCheckTimer = new Timer();
-            serverCheckTimer.Interval = 5000;
-            serverCheckTimer.Tick += ServerCheckTimer_Tick;
+            serverCheckTimer.Interval = 2000;
+            serverCheckTimer.Tick += (sender, e) => ServerCheckTimer_Tick();
             serverCheckTimer.Start();
         }
 
-        private void HeartbeatTimer_Tick(object sender, EventArgs e)
+        private void HeartbeatTimer_Tick()
         {
-            if (serverIsConnected)
-            {
-                SendMessage("PING", string.Empty);
-            }
+                SendMessage("PING", username);
         }
 
-        private void ServerCheckTimer_Tick(object sender, EventArgs e)
+        private void ServerCheckTimer_Tick()
         {
             if (serverIsConnected)
             {
                 TimeSpan timeSinceLastResponse = DateTime.Now - lastServerResponseTime;
-                if (timeSinceLastResponse.TotalMilliseconds > 10000) // 5 seconds
+                if (timeSinceLastResponse.TotalMilliseconds > 3000)
                 {
-                    serverIsConnected = false; // Assume server is disconnected
-                    MarkAllUsersOffline(); // Update UI to reflect offline status
-                    RequestOfflineUsers(); // Request offline users list
+                    serverIsConnected = false;
+                    MarkAllUsersOffline();
                     Console.WriteLine("Server is considered disconnected.");
                 }
+                SendMessage("RECONNECTED", username);
             }
             else
             {
-                MarkAllUsersOffline(); // Update UI to reflect offline status
+                MarkAllUsersOffline();
                 Console.WriteLine("Server is still disconnected.");
             }
         }
@@ -95,62 +90,53 @@ namespace ChatClientApp
         private void UsersListBox_DrawItem(object sender, ListBoxDrawItemEventArgs e)
         {
             e.Appearance.DrawBackground(e.Cache, e.Bounds);
-
             if (e.Index < 0) return;
 
             string user = e.Item.ToString();
             bool isOnline = onlineUsers.ContainsKey(user) && onlineUsers[user];
             Image statusImage = isOnline ? statusImageList.Images["online"] : statusImageList.Images["offline"];
             e.Cache.Graphics.DrawImage(statusImage, e.Bounds.Location);
-
             Rectangle textRect = new Rectangle(e.Bounds.X + statusImage.Width + 2, e.Bounds.Y, e.Bounds.Width - statusImage.Width - 2, e.Bounds.Height);
             e.Appearance.DrawString(e.Cache, user, textRect);
             e.Handled = true;
         }
 
-        private void MainForm_Load(object sender, EventArgs e)
+        private async void MainForm_Load(object sender, EventArgs e)
         {
             DevExpress.LookAndFeel.UserLookAndFeel.Default.SetSkinStyle("The Bezier");
             username = XtraInputBox.Show("Enter your username:", "Username", "");
-
             if (string.IsNullOrWhiteSpace(username))
             {
                 MessageBox.Show("Username cannot be empty.");
                 this.Close();
                 return;
             }
+
             this.Text = "ChatBox" + " - " + username;
-
-            allUsers.Add(username); // Add user to the list of all users
-            onlineUsers[username] = true; // Mark self as online initially
-
+            allUsers.Add(username);
+            onlineUsers[username] = true;
             clientSocket = new DealerSocket();
             clientSocket.Options.Identity = System.Text.Encoding.UTF8.GetBytes(username);
             clientSocket.Connect(serverAddress);
-
             var poller = new NetMQPoller { clientSocket };
             clientSocket.ReceiveReady += ClientSocket_ReceiveReady;
             poller.RunAsync();
-
             SendMessage("CONNECT", username);
-            UpdateOnlineUsers(allUsers.ToArray()); // Initialize the UI with all users
+            UpdateOnlineUsers(allUsers.ToArray());
         }
 
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
             SendMessage("DISCONNECT", username);
-            onlineUsers[username] = false; // Mark self as offline
+            onlineUsers[username] = false;
             clientSocket.Disconnect(serverAddress);
             clientSocket.Close();
-
-            // Refresh the UI to show the user as offline
             RefreshUserList();
         }
 
         private void sendButton_Click(object sender, EventArgs e)
         {
             string message = messageTextBox.Text;
-
             if (string.IsNullOrWhiteSpace(currentRecipient) || string.IsNullOrWhiteSpace(message))
             {
                 MessageBox.Show("Recipient and message cannot be empty.");
@@ -161,18 +147,15 @@ namespace ChatClientApp
             {
                 MessageBox.Show("You cannot send a message to yourself.");
             }
+            else if (onlineUsers.ContainsKey(currentRecipient) && onlineUsers[currentRecipient])
+            {
+                SendMessage("MESSAGE", $"{currentRecipient}:{message}");
+                AppendChatMessage(currentRecipient, username, message);
+                messageTextBox.Text = string.Empty;
+            }
             else
             {
-                if (onlineUsers.ContainsKey(currentRecipient) && onlineUsers[currentRecipient])
-                {
-                    SendMessage("MESSAGE", $"{currentRecipient}:{message}");
-                    AppendChatMessage(currentRecipient, username, message);
-                    messageTextBox.Text = string.Empty;
-                }
-                else
-                {
-                    MessageBox.Show($"{currentRecipient} is offline.");
-                }
+                MessageBox.Show($"{currentRecipient} is offline.");
             }
         }
 
@@ -180,7 +163,11 @@ namespace ChatClientApp
         {
             var messageType = e.Socket.ReceiveFrameString();
             var message = e.Socket.ReceiveFrameString();
+            HandleReceivedMessage(messageType, message);
+        }
 
+        private void HandleReceivedMessage(string messageType, string message)
+        {
             if (messageType == "MESSAGE")
             {
                 var parts = message.Split(new[] { ':' }, 2);
@@ -195,53 +182,16 @@ namespace ChatClientApp
             {
                 var users = message.Split(',');
                 UpdateOnlineUsers(users);
-                serverIsConnected = true; // Server is responsive
-                lastServerResponseTime = DateTime.Now; // Update last server response time
+                serverIsConnected = true;
+                lastServerResponseTime = DateTime.Now;
                 Console.WriteLine("Server response received: ONLINE_USERS");
-            }
-            else if (messageType == "OFFLINE_USERS")
-            {
-                var users = message.Split(',');
-                UpdateOfflineUsers(users);
-                Console.WriteLine("Server response received: OFFLINE_USERS");
             }
             else if (messageType == "PONG")
             {
-                if (!serverIsConnected)
-                {
-                    // Send the offline user list to the server
-                    var offlineUsersList = string.Join(",", offlineUsers);
-                    SendMessage("UPDATE_OFFLINE_USERS", offlineUsersList);
-                }
-                serverIsConnected = true; // Server is responsive
-                lastServerResponseTime = DateTime.Now; // Update last server response time
+                serverIsConnected = true;
+                lastServerResponseTime = DateTime.Now;
                 Console.WriteLine("Server response received: PONG");
-                SendMessage("REQUEST_ONLINE_USERS", string.Empty);
             }
-        }
-
-        private void UpdateOfflineUsers(string[] users)
-        {
-            // Add received offline users to the offline list
-            offlineUsers = new HashSet<string>(allUsers);
-
-            // Update online users based on offline users received
-            foreach (var user in offlineUsers)
-            {
-                if (allUsers.Contains(user))
-                {
-                    onlineUsers[user] = true; // Mark user as online
-                }
-            }
-
-            // Refresh user list to update UI
-            RefreshUserList();
-        }
-
-
-        private void RequestOfflineUsers()
-        {
-            SendMessage("REQUEST_OFFLINE_USERS", string.Empty);
         }
 
         private void AddChatTab(string recipient)
@@ -253,19 +203,8 @@ namespace ChatClientApp
                 return;
             }
 
-            var newTab = new DevExpress.XtraTab.XtraTabPage
-            {
-                Text = recipient,
-                Name = $"tab_{recipient}",
-                Size = new Size(486, 255)
-            };
-
-            var chatMemo = new DevExpress.XtraEditors.MemoEdit
-            {
-                Dock = DockStyle.Fill,
-                ReadOnly = true,
-                Name = $"memo_{recipient}"
-            };
+            var newTab = new DevExpress.XtraTab.XtraTabPage { Text = recipient, Name = $"tab_{recipient}", Size = new Size(486, 255) };
+            var chatMemo = new DevExpress.XtraEditors.MemoEdit { Dock = DockStyle.Fill, ReadOnly = true, Name = $"memo_{recipient}" };
             newTab.Controls.Add(chatMemo);
             chatTabControl.TabPages.Add(newTab);
             chatTabControl.SelectedTabPage = newTab;
@@ -282,7 +221,7 @@ namespace ChatClientApp
             var tab = chatTabControl.TabPages.FirstOrDefault(tp => tp.Text == recipient);
             if (tab != null)
             {
-                var chatMemo = tab.Controls.OfType<DevExpress.XtraEditors.MemoEdit>().FirstOrDefault();
+                var chatMemo = tab.Controls.OfType<MemoEdit>().FirstOrDefault();
                 chatMemo?.AppendText($"{senderUsername}: {message}{Environment.NewLine}");
             }
             else
@@ -294,7 +233,10 @@ namespace ChatClientApp
 
         private void SendMessage(string messageType, string message)
         {
-            clientSocket.SendMoreFrame(messageType).SendFrame(message);
+            if (clientSocket != null)
+            {
+                clientSocket.SendMoreFrame(messageType).SendFrame(message);
+            }
         }
 
         private void RefreshUserList()
@@ -304,65 +246,60 @@ namespace ChatClientApp
                 Invoke(new Action(RefreshUserList));
                 return;
             }
-            // Store the currently selected item
             var selectedItem = UsersListBox.SelectedItem;
-
-            // Create a list of current items to update
             var currentItems = new List<string>(UsersListBox.Items.Cast<string>());
             UsersListBox.Items.Clear();
-
-
-            // Add new items
             foreach (var user in allUsers)
             {
                 if (!UsersListBox.Items.Contains(user))
-                {
                     UsersListBox.Items.Add(user);
-                }
             }
-
-            // Re-select the previously selected item if it still exists
             if (selectedItem != null && UsersListBox.Items.Contains(selectedItem))
-            {
                 UsersListBox.SelectedItem = selectedItem;
-            }
         }
-
-
 
         private void UpdateOnlineUsers(string[] users)
         {
             if (InvokeRequired)
             {
                 Invoke(new Action(() => UpdateOnlineUsers(users)));
-                return;
             }
-
-            // Update allUsers set with received users
-
             var updatedUsers = new HashSet<string>(users);
-
-            // Mark all current users as offline if they are not in the updated list
-
             foreach (var user in onlineUsers.Keys.ToList())
             {
                 if (!updatedUsers.Contains(user))
-                {
                     onlineUsers[user] = false;
-                }
             }
-            // Update the online status for new users
             foreach (var user in updatedUsers)
-
             {
                 onlineUsers[user] = true;
                 if (!allUsers.Contains(user))
-                {
-
                     allUsers.Add(user);
-                }
             }
-            RefreshUserList(); // Refresh the UI
+
+            RefreshUserList();
+        }
+
+        private void UpdateOfflineUsers(string[] users)
+        {
+            if (InvokeRequired)
+            {
+                Invoke(new Action(() => UpdateOfflineUsers(users)));
+            }
+            var updatedUsers = new HashSet<string>(users);
+            foreach (var user in onlineUsers.Keys.ToList())
+            {
+                if (!updatedUsers.Contains(user))
+                    onlineUsers[user] = false;
+            }
+            foreach (var user in updatedUsers)
+            {
+                onlineUsers[user] = true;
+                if (!allUsers.Contains(user))
+                    allUsers.Add(user);
+            }
+
+            RefreshUserList();
         }
 
         private void MarkAllUsersOffline()
@@ -373,31 +310,21 @@ namespace ChatClientApp
             }
             RefreshUserList();
         }
+
         private void UsersListBox_SelectedIndexChanged(object sender, EventArgs e)
         {
             if (UsersListBox.SelectedItem != null)
-            {
                 currentRecipient = UsersListBox.SelectedItem.ToString();
-
-                // Select the corresponding tab
-                var tabToSelect = chatTabControl.TabPages.FirstOrDefault(tp => tp.Text == currentRecipient);
-                if (tabToSelect != null)
-                {
-                    chatTabControl.SelectedTabPage = tabToSelect;
-                }
-            }
+            var tabToSelect = chatTabControl.TabPages.FirstOrDefault(tp => tp.Text == currentRecipient);
+            if (tabToSelect != null)
+                chatTabControl.SelectedTabPage = tabToSelect;
         }
 
         private void chatTabControl_SelectedPageChanged(object sender, DevExpress.XtraTab.TabPageChangedEventArgs e)
         {
             if (e.Page != null)
-            {
                 currentRecipient = e.Page.Text;
-
-                // Select the corresponding user in the list box
-                UsersListBox.SelectedItem = currentRecipient;
-            }
+            UsersListBox.SelectedItem = currentRecipient;
         }
-
     }
 }
