@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.ServiceModel.Channels;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -62,12 +63,20 @@ namespace ChatClientApp
             serverCheckTimer.Start();
         }
 
-        private void HeartbeatTimer_Tick()
+        private async Task HeartbeatTimer_Tick()
         {
-                SendMessage("PING", username);
+            if (serverIsConnected)
+            {
+                await SendMessage("PING", string.Empty);
+            }
+            else
+            {
+                Console.WriteLine("Server is currently down. Attempting to send PING...");
+                await SendMessage("PING", string.Empty);
+            }
         }
 
-        private void ServerCheckTimer_Tick()
+        private async Task ServerCheckTimer_Tick()
         {
             if (serverIsConnected)
             {
@@ -75,14 +84,14 @@ namespace ChatClientApp
                 if (timeSinceLastResponse.TotalMilliseconds > 3000)
                 {
                     serverIsConnected = false;
-                    MarkAllUsersOffline();
+                    await MarkAllUsersOffline();
                     Console.WriteLine("Server is considered disconnected.");
-                    SendMessage("RECONNECT", username);
+                    await SendMessage("RECONNECT", username);
                 }
             }
             else
             {
-                MarkAllUsersOffline();
+                await MarkAllUsersOffline();
                 Console.WriteLine("Server is still disconnected.");
             }
         }
@@ -121,13 +130,13 @@ namespace ChatClientApp
             var poller = new NetMQPoller { clientSocket };
             clientSocket.ReceiveReady += ClientSocket_ReceiveReady;
             poller.RunAsync();
-            SendMessage("CONNECT", username);
+            await SendMessage("CONNECT", username);
             UpdateOnlineUsers(allUsers.ToArray());
         }
 
-        private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
+        private async void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
-            SendMessage("DISCONNECT", username);
+            await SendMessage("DISCONNECT", username);
             onlineUsers[username] = false;
             clientSocket.Disconnect(serverAddress);
             clientSocket.Close();
@@ -196,6 +205,11 @@ namespace ChatClientApp
 
         private void AddChatTab(string recipient)
         {
+            if (InvokeRequired)
+            {
+                Invoke(new Action(() => AddChatTab(recipient)));
+                return;
+            }
             var existingTab = chatTabControl.TabPages.FirstOrDefault(tp => tp.Text == recipient);
             if (existingTab != null)
             {
@@ -231,11 +245,14 @@ namespace ChatClientApp
             }
         }
 
-        private void SendMessage(string messageType, string message)
+        private async Task SendMessage(string messageType, string message)
         {
             if (clientSocket != null)
             {
-                clientSocket.SendMoreFrame(messageType).SendFrame(message);
+                await Task.Run(() =>
+                {
+                    clientSocket.SendMoreFrame(messageType).SendFrame(message);
+                });
             }
         }
 
@@ -302,13 +319,16 @@ namespace ChatClientApp
             RefreshUserList();
         }
 
-        private void MarkAllUsersOffline()
+        private async Task MarkAllUsersOffline()
         {
-            foreach (var user in onlineUsers.Keys.ToList())
+            await Task.Run(() =>
             {
-                onlineUsers[user] = false;
-            }
-            RefreshUserList();
+                foreach (var user in onlineUsers.Keys.ToList())
+                {
+                    onlineUsers[user] = false;
+                }
+                RefreshUserList();
+            });
         }
 
         private void UsersListBox_SelectedIndexChanged(object sender, EventArgs e)
