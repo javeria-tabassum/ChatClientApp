@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
-using System.ServiceModel.Channels;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -15,14 +14,12 @@ namespace ChatClientApp
     public partial class MainForm : XtraForm
     {
         private string username;
-        private string serverAddress = "tcp://localhost:5555";
+        private const string serverAddress = "tcp://localhost:5555";
         private string currentRecipient;
         private Timer heartbeatTimer;
-        private Timer serverCheckTimer;
         private DealerSocket clientSocket;
-        private HashSet<string> allUsers = new HashSet<string>();
-        private HashSet<string> offlineUsers = new HashSet<string>();
-        private Dictionary<string, bool> onlineUsers = new Dictionary<string, bool>();
+        private readonly HashSet<string> allUsers = new HashSet<string>();
+        private readonly Dictionary<string, bool> onlineUsers = new Dictionary<string, bool>();
         private bool serverIsConnected;
         private DateTime lastServerResponseTime;
         private ImageList statusImageList;
@@ -32,7 +29,6 @@ namespace ChatClientApp
             InitializeComponent();
             InitializeStatusImageList();
             InitializeHeartbeatTimer();
-            InitializeServerCheckTimer();
         }
 
         private void InitializeStatusImageList()
@@ -41,58 +37,47 @@ namespace ChatClientApp
             string basePath = AppDomain.CurrentDomain.BaseDirectory;
             string onlineImagePath = Path.Combine(basePath, "images/green_dot.png");
             string offlineImagePath = Path.Combine(basePath, "images/red_dot.png");
-            statusImageList.Images.Add("online", Image.FromFile(onlineImagePath));
-            statusImageList.Images.Add("offline", Image.FromFile(offlineImagePath));
+
+            try
+            {
+                statusImageList.Images.Add("online", Image.FromFile(onlineImagePath));
+                statusImageList.Images.Add("offline", Image.FromFile(offlineImagePath));
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error loading status images: {ex.Message}");
+                Application.Exit();
+            }
+
             UsersListBox.DrawItem += UsersListBox_DrawItem;
             UsersListBox.ItemHeight = statusImageList.ImageSize.Height + 2;
         }
 
         private void InitializeHeartbeatTimer()
         {
-            heartbeatTimer = new Timer();
-            heartbeatTimer.Interval = 1000;
-            heartbeatTimer.Tick += (sender, e) => HeartbeatTimer_Tick();
+            heartbeatTimer = new Timer { Interval = 2000 };
+            heartbeatTimer.Tick += async (sender, e) => await HeartbeatTimer_Tick();
             heartbeatTimer.Start();
-        }
-
-        private void InitializeServerCheckTimer()
-        {
-            serverCheckTimer = new Timer();
-            serverCheckTimer.Interval = 2000;
-            serverCheckTimer.Tick += (sender, e) => ServerCheckTimer_Tick();
-            serverCheckTimer.Start();
         }
 
         private async Task HeartbeatTimer_Tick()
         {
             if (serverIsConnected)
             {
-                await SendMessage("PING", string.Empty);
-            }
-            else
-            {
-                Console.WriteLine("Server is currently down. Attempting to send PING...");
-                await SendMessage("PING", string.Empty);
-            }
-        }
-
-        private async Task ServerCheckTimer_Tick()
-        {
-            if (serverIsConnected)
-            {
-                TimeSpan timeSinceLastResponse = DateTime.Now - lastServerResponseTime;
-                if (timeSinceLastResponse.TotalMilliseconds > 3000)
+                await SendMessageAsync("PING", string.Empty);
+                if ((DateTime.Now - lastServerResponseTime).TotalMilliseconds > 3000)
                 {
                     serverIsConnected = false;
-                    await MarkAllUsersOffline();
+                    await MarkAllUsersOfflineAsync();
                     Console.WriteLine("Server is considered disconnected.");
-                    await SendMessage("RECONNECT", username);
+                    await SendMessageAsync("RECONNECT", username);
                 }
             }
             else
             {
-                await MarkAllUsersOffline();
-                Console.WriteLine("Server is still disconnected.");
+                Console.WriteLine("Server is currently down. Attempting to send PING...");
+                await SendMessageAsync("PING", string.Empty);
+                await MarkAllUsersOfflineAsync();
             }
         }
 
@@ -104,6 +89,7 @@ namespace ChatClientApp
             string user = e.Item.ToString();
             bool isOnline = onlineUsers.ContainsKey(user) && onlineUsers[user];
             Image statusImage = isOnline ? statusImageList.Images["online"] : statusImageList.Images["offline"];
+
             e.Cache.Graphics.DrawImage(statusImage, e.Bounds.Location);
             Rectangle textRect = new Rectangle(e.Bounds.X + statusImage.Width + 2, e.Bounds.Y, e.Bounds.Width - statusImage.Width - 2, e.Bounds.Height);
             e.Appearance.DrawString(e.Cache, user, textRect);
@@ -117,26 +103,29 @@ namespace ChatClientApp
             if (string.IsNullOrWhiteSpace(username))
             {
                 MessageBox.Show("Username cannot be empty.");
-                this.Close();
+                Close();
                 return;
             }
 
-            this.Text = "ChatBox" + " - " + username;
+            this.Text = $"ChatBox - {username}";
             allUsers.Add(username);
             onlineUsers[username] = true;
+
             clientSocket = new DealerSocket();
             clientSocket.Options.Identity = System.Text.Encoding.UTF8.GetBytes(username);
             clientSocket.Connect(serverAddress);
+
             var poller = new NetMQPoller { clientSocket };
             clientSocket.ReceiveReady += ClientSocket_ReceiveReady;
             poller.RunAsync();
-            await SendMessage("CONNECT", username);
+
+            await SendMessageAsync("CONNECT", username);
             UpdateOnlineUsers(allUsers.ToArray());
         }
 
         private async void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
-            await SendMessage("DISCONNECT", username);
+            await SendMessageAsync("DISCONNECT", username);
             onlineUsers[username] = false;
             clientSocket.Disconnect(serverAddress);
             clientSocket.Close();
@@ -158,7 +147,7 @@ namespace ChatClientApp
             }
             else if (onlineUsers.ContainsKey(currentRecipient) && onlineUsers[currentRecipient])
             {
-                SendMessage("MESSAGE", $"{currentRecipient}:{message}");
+                SendMessageAsync("MESSAGE", $"{currentRecipient}:{message}");
                 AppendChatMessage(currentRecipient, username, message);
                 messageTextBox.Text = string.Empty;
             }
@@ -177,29 +166,35 @@ namespace ChatClientApp
 
         private void HandleReceivedMessage(string messageType, string message)
         {
-            if (messageType == "MESSAGE")
+            switch (messageType)
             {
-                var parts = message.Split(new[] { ':' }, 2);
-                if (parts.Length == 2)
-                {
-                    var senderUsername = parts[0];
-                    var chatMessage = parts[1];
-                    AppendChatMessage(senderUsername, senderUsername, chatMessage);
-                }
-            }
-            else if (messageType == "ONLINE_USERS")
-            {
-                var users = message.Split(',');
-                UpdateOnlineUsers(users);
-                serverIsConnected = true;
-                lastServerResponseTime = DateTime.Now;
-                Console.WriteLine("Server response received: ONLINE_USERS");
-            }
-            else if (messageType == "PONG")
-            {
-                serverIsConnected = true;
-                lastServerResponseTime = DateTime.Now;
-                Console.WriteLine("Server response received: PONG");
+                case "MESSAGE":
+                    var parts = message.Split(new[] { ':' }, 2);
+                    if (parts.Length == 2)
+                    {
+                        var senderUsername = parts[0];
+                        var chatMessage = parts[1];
+                        AppendChatMessage(senderUsername, senderUsername, chatMessage);
+                    }
+                    break;
+
+                case "ONLINE_USERS":
+                    var users = message.Split(',');
+                    UpdateOnlineUsers(users);
+                    serverIsConnected = true;
+                    lastServerResponseTime = DateTime.Now;
+                    Console.WriteLine("Server response received: ONLINE_USERS");
+                    break;
+
+                case "PONG":
+                    serverIsConnected = true;
+                    lastServerResponseTime = DateTime.Now;
+                    Console.WriteLine("Server response received: PONG");
+                    break;
+
+                default:
+                    Console.WriteLine("Unknown message type received.");
+                    break;
             }
         }
 
@@ -210,6 +205,7 @@ namespace ChatClientApp
                 Invoke(new Action(() => AddChatTab(recipient)));
                 return;
             }
+
             var existingTab = chatTabControl.TabPages.FirstOrDefault(tp => tp.Text == recipient);
             if (existingTab != null)
             {
@@ -245,7 +241,7 @@ namespace ChatClientApp
             }
         }
 
-        private async Task SendMessage(string messageType, string message)
+        private async Task SendMessageAsync(string messageType, string message)
         {
             if (clientSocket != null)
             {
@@ -263,16 +259,23 @@ namespace ChatClientApp
                 Invoke(new Action(RefreshUserList));
                 return;
             }
+
             var selectedItem = UsersListBox.SelectedItem;
             var currentItems = new List<string>(UsersListBox.Items.Cast<string>());
             UsersListBox.Items.Clear();
+
             foreach (var user in allUsers)
             {
                 if (!UsersListBox.Items.Contains(user))
+                {
                     UsersListBox.Items.Add(user);
+                }
             }
+
             if (selectedItem != null && UsersListBox.Items.Contains(selectedItem))
+            {
                 UsersListBox.SelectedItem = selectedItem;
+            }
         }
 
         private void UpdateOnlineUsers(string[] users)
@@ -281,45 +284,29 @@ namespace ChatClientApp
             {
                 Invoke(new Action(() => UpdateOnlineUsers(users)));
             }
+
             var updatedUsers = new HashSet<string>(users);
             foreach (var user in onlineUsers.Keys.ToList())
             {
                 if (!updatedUsers.Contains(user))
+                {
                     onlineUsers[user] = false;
+                }
             }
+
             foreach (var user in updatedUsers)
             {
                 onlineUsers[user] = true;
                 if (!allUsers.Contains(user))
+                {
                     allUsers.Add(user);
+                }
             }
 
             RefreshUserList();
         }
 
-        private void UpdateOfflineUsers(string[] users)
-        {
-            if (InvokeRequired)
-            {
-                Invoke(new Action(() => UpdateOfflineUsers(users)));
-            }
-            var updatedUsers = new HashSet<string>(users);
-            foreach (var user in onlineUsers.Keys.ToList())
-            {
-                if (!updatedUsers.Contains(user))
-                    onlineUsers[user] = false;
-            }
-            foreach (var user in updatedUsers)
-            {
-                onlineUsers[user] = true;
-                if (!allUsers.Contains(user))
-                    allUsers.Add(user);
-            }
-
-            RefreshUserList();
-        }
-
-        private async Task MarkAllUsersOffline()
+        private async Task MarkAllUsersOfflineAsync()
         {
             await Task.Run(() =>
             {
@@ -327,6 +314,7 @@ namespace ChatClientApp
                 {
                     onlineUsers[user] = false;
                 }
+
                 RefreshUserList();
             });
         }
@@ -348,3 +336,4 @@ namespace ChatClientApp
         }
     }
 }
+ 
