@@ -103,32 +103,42 @@ namespace ChatClientApp
         private async void MainForm_Load(object sender, EventArgs e)
         {
             DevExpress.LookAndFeel.UserLookAndFeel.Default.SetSkinStyle("The Bezier");
-            username = XtraInputBox.Show("Enter your username:", "Username", "");
-            if (string.IsNullOrWhiteSpace(username))
+            try
             {
-                MessageBox.Show("Username cannot be empty.");
+                username = XtraInputBox.Show("Enter your username:", "Username", "");
+                if (string.IsNullOrWhiteSpace(username))
+                {
+                    MessageBox.Show("Username cannot be empty.");
+                    Close();
+                    return;
+                }
+
+                this.Text = $"ChatBox - {username}";
+                allUsers.Add(username);
+                onlineUsers[username] = true;
+
+                clientSocket = new DealerSocket();
+                clientSocket.Options.Identity = System.Text.Encoding.UTF8.GetBytes(username);
+                clientSocket.Connect(serverAddress);
+
+                var poller = new NetMQPoller { clientSocket };
+                clientSocket.ReceiveReady += ClientSocket_ReceiveReady;
+                poller.RunAsync();
+
+                await SendMessageAsync("CONNECT", username);
+                UpdateOnlineUsers(allUsers.ToArray());
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to connect to server: {ex.Message}");
                 Close();
                 return;
             }
-
-            this.Text = $"ChatBox - {username}";
-            allUsers.Add(username);
-            onlineUsers[username] = true;
-
-            clientSocket = new DealerSocket();
-            clientSocket.Options.Identity = System.Text.Encoding.UTF8.GetBytes(username);
-            clientSocket.Connect(serverAddress);
-
-            var poller = new NetMQPoller { clientSocket };
-            clientSocket.ReceiveReady += ClientSocket_ReceiveReady;
-            poller.RunAsync();
-
-            await SendMessageAsync("CONNECT", username);
-            UpdateOnlineUsers(allUsers.ToArray());
         }
 
         private async void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
+            heartbeatTimer.Stop();
             await SendMessageAsync("DISCONNECT", username);
             onlineUsers[username] = false;
             clientSocket.Disconnect(serverAddress);
