@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Configuration;
 
 namespace ChatClientApp
 {
@@ -23,20 +24,23 @@ namespace ChatClientApp
         private bool serverIsConnected;
         private DateTime lastServerResponseTime;
         private ImageList statusImageList;
-
+        string onlineImageConfigPath = ConfigurationManager.AppSettings["OnlineImagePath"];
+        string offlineImageConfigPath = ConfigurationManager.AppSettings["OfflineImagePath"];
+        int heartbeatInterval = Convert.ToInt32(ConfigurationManager.AppSettings["HeartbeatInterval"]);
+        int timeoutMilliseconds = Convert.ToInt32(ConfigurationManager.AppSettings["ServerTimeoutMilliseconds"]);
         public MainForm()
         {
             InitializeComponent();
-            InitializeStatusImageList();
-            InitializeHeartbeatTimer();
+            InitializeStatusImageList(onlineImageConfigPath, offlineImageConfigPath);
+            InitializeHeartbeatTimer(heartbeatInterval, timeoutMilliseconds);
         }
 
-        private void InitializeStatusImageList()
+        private void InitializeStatusImageList(string onlinePath, string offlinePath)
         {
             statusImageList = new ImageList();
             string basePath = AppDomain.CurrentDomain.BaseDirectory;
-            string onlineImagePath = Path.Combine(basePath, "images/green_dot.png");
-            string offlineImagePath = Path.Combine(basePath, "images/red_dot.png");
+            string onlineImagePath = Path.Combine(basePath, onlinePath);
+            string offlineImagePath = Path.Combine(basePath, offlinePath);
 
             try
             {
@@ -53,19 +57,19 @@ namespace ChatClientApp
             UsersListBox.ItemHeight = statusImageList.ImageSize.Height + 2;
         }
 
-        private void InitializeHeartbeatTimer()
+        private void InitializeHeartbeatTimer(int interval, int timeoutMilliseconds)
         {
-            heartbeatTimer = new Timer { Interval = 2000 };
-            heartbeatTimer.Tick += async (sender, e) => await HeartbeatTimer_Tick();
+            heartbeatTimer = new Timer { Interval = interval };
+            heartbeatTimer.Tick += async (sender, e) => await HeartbeatTimer_Tick(timeoutMilliseconds);
             heartbeatTimer.Start();
         }
 
-        private async Task HeartbeatTimer_Tick()
+        private async Task HeartbeatTimer_Tick(int timeoutMilliseconds)
         {
             if (serverIsConnected)
             {
                 await SendMessageAsync("PING", string.Empty);
-                if ((DateTime.Now - lastServerResponseTime).TotalMilliseconds > 3000)
+                if ((DateTime.Now - lastServerResponseTime).TotalMilliseconds > timeoutMilliseconds)
                 {
                     serverIsConnected = false;
                     await MarkAllUsersOfflineAsync();
